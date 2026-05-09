@@ -61,13 +61,44 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+/**
+ * ⚠️  TAPY PIPELINE ZONE — DO NOT MODIFY THIS LAYOUT WITHOUT EXPLICIT INSTRUCTION.
+ *
+ * The two NEXT_PUBLIC_ env vars below are set exclusively by the Tapy deploy pipeline,
+ * NOT by the AI and NOT by the developer manually.
+ *
+ * Data flow:
+ *   Tapy pipeline → sets NEXT_PUBLIC_TAPY_* env vars at build time
+ *   layout.tsx    → converts them into <meta> tags (this file, below)
+ *   submitTapyForm → reads ONLY the <meta> tags at runtime (never reads env directly)
+ *
+ * AI rules:
+ *   ✗ Do NOT add or remove the tapy-project-id / tapy-api-url meta tags
+ *   ✗ Do NOT read or write NEXT_PUBLIC_TAPY_* env vars in generated code
+ *   ✓ DO use submitTapyForm() in form onSubmit handlers
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Build-time env vars → runtime meta tags.
+  // Empty string = tag omitted; submitTapyForm will return MISSING_PROJECT_ID.
+  const projectId = process.env.NEXT_PUBLIC_TAPY_PROJECT_ID ?? "";
+  const apiUrl =
+    (process.env.NEXT_PUBLIC_TAPY_API_URL ?? "").replace(/\/$/, "") ||
+    "https://api.tapy.to";
+
   return (
     <html lang={seoData.locale.split('_')[0]}>
+      <head>
+        {/* tapy-pipeline:begin — managed by Tapy deploy pipeline, AI must not touch */}
+        {projectId ? (
+          <meta name="tapy-project-id" content={projectId} />
+        ) : null}
+        <meta name="tapy-api-url" content={apiUrl} />
+        {/* tapy-pipeline:end */}
+      </head>
       <body className="antialiased">
         <JsonLd />
         {children}
